@@ -806,24 +806,27 @@ class _FooterLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () async {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) await launchUrl(uri);
-      },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.open_in_new, size: 13, color: Colors.white54),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withAlpha(200),
-              fontSize: 12,
+    return Tooltip(
+      message: url,
+      child: InkWell(
+        onTap: () async {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) await launchUrl(uri);
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.open_in_new, size: 13, color: Colors.white54),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withAlpha(200),
+                fontSize: 12,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -847,14 +850,20 @@ class _FooterRichLine extends StatelessWidget {
     return Wrap(
       alignment: WrapAlignment.center,
       children: [
-        InkWell(
-          onTap: () => _open('https://github.com/pkeir/moodle-gift-gen'),
-          child: const Text('Source code', style: linkStyle),
+        Tooltip(
+          message: 'https://github.com/pkeir/moodle-gift-gen',
+          child: InkWell(
+            onTap: () => _open('https://github.com/pkeir/moodle-gift-gen'),
+            child: const Text('Source code', style: linkStyle),
+          ),
         ),
         const Text(' developed with the help of ', style: style),
-        InkWell(
-          onTap: () => _open('https://code.claude.com/docs/en/cli-reference'),
-          child: const Text('Claude CLI', style: linkStyle),
+        Tooltip(
+          message: 'https://code.claude.com/docs/en/cli-reference',
+          child: InkWell(
+            onTap: () => _open('https://code.claude.com/docs/en/cli-reference'),
+            child: const Text('Claude CLI', style: linkStyle),
+          ),
         ),
       ],
     );
