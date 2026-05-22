@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/link.dart';
 import '../models/msp.dart';
 import '../services/game_service.dart';
 
@@ -806,13 +807,11 @@ class _FooterLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: url,
-      child: InkWell(
-        onTap: () async {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) await launchUrl(uri);
-        },
+    return Link(
+      uri: Uri.parse(url),
+      target: LinkTarget.blank,
+      builder: (context, followLink) => InkWell(
+        onTap: followLink,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -833,11 +832,6 @@ class _FooterLink extends StatelessWidget {
 }
 
 class _FooterRichLine extends StatelessWidget {
-  Future<void> _open(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
-  }
-
   @override
   Widget build(BuildContext context) {
     const style = TextStyle(color: Color(0xFFB0BEC5), fontSize: 12);
@@ -850,18 +844,20 @@ class _FooterRichLine extends StatelessWidget {
     return Wrap(
       alignment: WrapAlignment.center,
       children: [
-        Tooltip(
-          message: 'https://github.com/pkeir/msp-active-recall',
-          child: InkWell(
-            onTap: () => _open('https://github.com/pkeir/msp-active-recall'),
+        Link(
+          uri: Uri.parse('https://github.com/pkeir/msp-active-recall'),
+          target: LinkTarget.blank,
+          builder: (context, followLink) => InkWell(
+            onTap: followLink,
             child: const Text('Source code', style: linkStyle),
           ),
         ),
         const Text(' developed with the help of ', style: style),
-        Tooltip(
-          message: 'https://code.claude.com/docs/en/cli-reference',
-          child: InkWell(
-            onTap: () => _open('https://code.claude.com/docs/en/cli-reference'),
+        Link(
+          uri: Uri.parse('https://code.claude.com/docs/en/cli-reference'),
+          target: LinkTarget.blank,
+          builder: (context, followLink) => InkWell(
+            onTap: followLink,
             child: const Text('Claude CLI', style: linkStyle),
           ),
         ),
