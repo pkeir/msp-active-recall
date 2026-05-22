@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/link.dart';
 import '../models/msp.dart';
 import '../services/game_service.dart';
@@ -691,34 +690,33 @@ class _InfoBox extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          InkWell(
-            onTap: () => _launchUrl(msp.profileUrl),
-            child: Row(
-              children: [
-                const Icon(Icons.open_in_new,
-                    size: 16, color: Color(0xFF1565C0)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'View ${msp.name} on the Scottish Parliament website',
-                    style: const TextStyle(
-                      color: Color(0xFF1565C0),
-                      decoration: TextDecoration.underline,
-                      fontSize: 13,
+          Link(
+            uri: Uri.parse(msp.profileUrl),
+            target: LinkTarget.blank,
+            builder: (context, followLink) => InkWell(
+              onTap: followLink,
+              child: Row(
+                children: [
+                  const Icon(Icons.open_in_new,
+                      size: 16, color: Color(0xFF1565C0)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'View ${msp.name} on the Scottish Parliament website',
+                      style: const TextStyle(
+                        color: Color(0xFF1565C0),
+                        decoration: TextDecoration.underline,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }
 
@@ -845,7 +843,7 @@ class _FooterRichLine extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         Link(
-          uri: Uri.parse('https://github.com/pkeir/msp-active-recall'),
+          uri: Uri.parse('https://github.com/pkeir/moodle-gift-gen'),
           target: LinkTarget.blank,
           builder: (context, followLink) => InkWell(
             onTap: followLink,
