@@ -82828,7 +82828,7 @@ return A.xT(!1,s,!0,A.kv(A.c([B.Fy,B.yV,A.db(this.a.c,s,s,s,A.eV(s,s,A.au(200,B.
 $S:61}
 A.Q7.prototype={
 J(a){var s=null
-return new A.Nx(B.A_,A.c([new A.oh(new A.ahx(),A.fX("https://github.com/pkeir/moodle-gift-gen",0,s),B.d3,s),B.VD,new A.oh(new A.ahy(),A.fX("https://code.claude.com/docs/en/cli-reference",0,s),B.d3,s)],t.p),s)}}
+return new A.Nx(B.A_,A.c([new A.oh(new A.ahx(),A.fX("https://github.com/pkeir/msp-active-recall",0,s),B.d3,s),B.VD,new A.oh(new A.ahy(),A.fX("https://code.claude.com/docs/en/cli-reference",0,s),B.d3,s)],t.p),s)}}
 A.ahx.prototype={
 $2(a,b){var s=null
 return A.xT(!1,s,!0,B.VH,s,!0,s,s,s,s,s,s,b,s,s,s)},
