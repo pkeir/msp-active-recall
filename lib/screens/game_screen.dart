@@ -178,6 +178,7 @@ class _GameScreenState extends State<GameScreen> {
                 total: _service.totalCount,
               ),
               Expanded(
+                child: SelectionArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 20),
@@ -219,6 +220,7 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                     ),
                   ),
+                ),
                 ),
               ),
               const _Footer(),
@@ -846,7 +848,7 @@ class _FooterRichLine extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         InkWell(
-          onTap: () => _open('https://github.com/pkeir/msp-active-recall'),
+          onTap: () => _open('https://github.com/pkeir/moodle-gift-gen'),
           child: const Text('Source code', style: linkStyle),
         ),
         const Text(' developed with the help of ', style: style),
