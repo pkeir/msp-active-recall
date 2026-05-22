@@ -152,7 +152,11 @@ class _GameScreenState extends State<GameScreen> {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.enter): () {
-          if (_phase == _GamePhase.playing && _canSubmit) _submit();
+          if (_phase == _GamePhase.playing && _canSubmit) {
+            _submit();
+          } else if (_phase == _GamePhase.result) {
+            _next();
+          }
         },
       },
       child: Focus(
@@ -277,7 +281,7 @@ class _ProgressHeader extends StatelessWidget {
 
 // ── Playing view ──────────────────────────────────────────────────────────────
 
-class _PlayingView extends StatelessWidget {
+class _PlayingView extends StatefulWidget {
   const _PlayingView({
     super.key,
     required this.msp,
@@ -296,6 +300,39 @@ class _PlayingView extends StatelessWidget {
   final VoidCallback onSubmit;
 
   @override
+  State<_PlayingView> createState() => _PlayingViewState();
+}
+
+class _PlayingViewState extends State<_PlayingView> {
+  final _partyFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _partyFocusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _onPartyKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final parties = kPartyOrder;
+    final cur = widget.selectedParty == null
+        ? -1
+        : parties.indexOf(widget.selectedParty!);
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      widget.onPartySelected(parties[(cur + 1) % parties.length]);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      widget.onPartySelected(
+          parties[cur <= 0 ? parties.length - 1 : cur - 1]);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -309,7 +346,7 @@ class _PlayingView extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Image.asset(
-            msp.imagePath,
+            widget.msp.imagePath,
             height: 260,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => Container(
@@ -334,19 +371,19 @@ class _PlayingView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: nameController,
+          controller: widget.nameController,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
             hintText: 'Type their full name…',
             prefixIcon: Icon(Icons.person_outline),
           ),
-          onSubmitted: (_) => canSubmit ? onSubmit() : null,
+          onSubmitted: (_) => widget.canSubmit ? widget.onSubmit() : null,
         ),
 
         const SizedBox(height: 20),
 
-        // Party selector
+        // Party selector — single TAB stop; UP/DOWN move selection
         Text(
           'Which party?',
           style: Theme.of(context)
@@ -355,17 +392,48 @@ class _PlayingView extends StatelessWidget {
               ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        ...kPartyOrder.map((party) => _PartyOption(
-              party: party,
-              selected: party == selectedParty,
-              onTap: () => onPartySelected(party),
-            )),
+        Focus(
+          focusNode: _partyFocusNode,
+          onKeyEvent: _onPartyKey,
+          child: ListenableBuilder(
+            listenable: _partyFocusNode,
+            builder: (context, _) {
+              final focused = _partyFocusNode.hasFocus;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                decoration: focused
+                    ? BoxDecoration(
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      )
+                    : null,
+                padding: focused
+                    ? const EdgeInsets.all(6)
+                    : EdgeInsets.zero,
+                child: ExcludeFocus(
+                  child: Column(
+                    children: kPartyOrder
+                        .map((party) => _PartyOption(
+                              party: party,
+                              selected: party == widget.selectedParty,
+                              onTap: () => widget.onPartySelected(party),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
 
         const SizedBox(height: 20),
 
         // Submit
         FilledButton.icon(
-          onPressed: canSubmit ? onSubmit : null,
+          onPressed: widget.canSubmit ? widget.onSubmit : null,
           icon: const Icon(Icons.check),
           label: const Text('Submit'),
           style: FilledButton.styleFrom(
@@ -575,6 +643,7 @@ class _ResultView extends StatelessWidget {
 
         // Next button
         FilledButton.icon(
+          autofocus: true,
           onPressed: onNext,
           icon: const Icon(Icons.arrow_forward),
           label: const Text('Next MSP'),
@@ -843,7 +912,7 @@ class _FooterRichLine extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         Link(
-          uri: Uri.parse('https://github.com/pkeir/moodle-gift-gen'),
+          uri: Uri.parse('https://github.com/pkeir/msp-active-recall'),
           target: LinkTarget.blank,
           builder: (context, followLink) => InkWell(
             onTap: followLink,
