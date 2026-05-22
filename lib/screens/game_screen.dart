@@ -61,6 +61,7 @@ class _GameScreenState extends State<GameScreen> {
   Msp? _currentMsp;
   GuessResult? _lastResult;
   final _nameController = TextEditingController();
+  final _nameFocusNode = FocusNode();
   String? _selectedParty;
 
   GameService get _service => widget.service;
@@ -82,6 +83,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
@@ -114,6 +116,10 @@ class _GameScreenState extends State<GameScreen> {
         _currentMsp = _service.pickNext();
       }
     });
+    if (_phase == _GamePhase.playing) {
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) { if (mounted) _nameFocusNode.requestFocus(); });
+    }
   }
 
   Future<void> _confirmReset() async {
@@ -194,6 +200,7 @@ class _GameScreenState extends State<GameScreen> {
                               key: ValueKey(_currentMsp?.slug ?? ''),
                               msp: _currentMsp!,
                               nameController: _nameController,
+                              nameFocusNode: _nameFocusNode,
                               selectedParty: _selectedParty,
                               onPartySelected: (p) =>
                                   setState(() => _selectedParty = p),
@@ -283,6 +290,7 @@ class _PlayingView extends StatefulWidget {
     super.key,
     required this.msp,
     required this.nameController,
+    required this.nameFocusNode,
     required this.selectedParty,
     required this.onPartySelected,
     required this.canSubmit,
@@ -291,6 +299,7 @@ class _PlayingView extends StatefulWidget {
 
   final Msp msp;
   final TextEditingController nameController;
+  final FocusNode nameFocusNode;
   final String? selectedParty;
   final ValueChanged<String> onPartySelected;
   final bool canSubmit;
@@ -369,6 +378,7 @@ class _PlayingViewState extends State<_PlayingView> {
         const SizedBox(height: 8),
         TextField(
           controller: widget.nameController,
+          focusNode: widget.nameFocusNode,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
