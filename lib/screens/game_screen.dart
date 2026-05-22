@@ -919,7 +919,7 @@ class _FooterRichLine extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         Link(
-          uri: Uri.parse('https://github.com/pkeir/moodle-gift-gen'),
+          uri: Uri.parse('https://github.com/pkeir/msp-active-recall'),
           target: LinkTarget.blank,
           builder: (context, followLink) => InkWell(
             onTap: followLink,
