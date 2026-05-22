@@ -159,9 +159,7 @@ class _GameScreenState extends State<GameScreen> {
           }
         },
       },
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
+      child: Scaffold(
           backgroundColor: const Color(0xFFF0F2F5),
           appBar: AppBar(
             backgroundColor: const Color(0xFF003087),
@@ -231,7 +229,6 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -912,7 +909,7 @@ class _FooterRichLine extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         Link(
-          uri: Uri.parse('https://github.com/pkeir/msp-active-recall'),
+          uri: Uri.parse('https://github.com/pkeir/moodle-gift-gen'),
           target: LinkTarget.blank,
           builder: (context, followLink) => InkWell(
             onTap: followLink,
