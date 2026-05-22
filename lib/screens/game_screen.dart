@@ -851,9 +851,9 @@ class _FooterRichLine extends StatelessWidget {
       alignment: WrapAlignment.center,
       children: [
         Tooltip(
-          message: 'https://github.com/pkeir/moodle-gift-gen',
+          message: 'https://github.com/pkeir/msp-active-recall',
           child: InkWell(
-            onTap: () => _open('https://github.com/pkeir/moodle-gift-gen'),
+            onTap: () => _open('https://github.com/pkeir/msp-active-recall'),
             child: const Text('Source code', style: linkStyle),
           ),
         ),
