@@ -41,7 +41,7 @@ class GameService {
     return pool[Random().nextInt(pool.length)];
   }
 
-  GuessResult submitGuess(Msp msp, String nameInput, String selectedParty) {
+  GuessResult submitGuess(Msp msp, String nameInput, String? selectedParty) {
     final nameResult = _matcher.match(nameInput, msp.name);
     final partyCorrect = selectedParty == msp.party;
     final bothCorrect = nameResult.isCorrect && partyCorrect;

@@ -6,13 +6,13 @@ import '../services/game_service.dart';
 
 // Party display order: descending seats (2026 election), reverse-alpha on ties.
 const List<String> kPartyOrder = [
-  'Scottish National Party',    // 57 seats
-  'Scottish Labour',            // 17 seats  (S > R in reverse-alpha)
-  'Reform UK',                  // 17 seats
-  'Scottish Green Party',       // 15 seats
-  'Scottish Conservatives',     // 12 seats
+  'Scottish National Party', // 57 seats
+  'Scottish Labour', // 17 seats  (S > R in reverse-alpha)
+  'Reform UK', // 17 seats
+  'Scottish Green Party', // 15 seats
+  'Scottish Conservatives', // 12 seats
   'Scottish Liberal Democrats', // 10 seats
-  'No Party Affiliation',       //  1 seat
+  'No Party Affiliation', //  1 seat
 ];
 
 const Map<String, int> kPartySeats = {
@@ -26,15 +26,15 @@ const Map<String, int> kPartySeats = {
 };
 
 Color _partyColor(String party) => switch (party) {
-      'Scottish National Party' => const Color(0xFFF5D800),
-      'Scottish Labour' => const Color(0xFFDC241F),
-      'Reform UK' => const Color(0xFF12B6CF),
-      'Scottish Green Party' => const Color(0xFF009E44),
-      'Scottish Conservatives' => const Color(0xFF003087),
-      'Scottish Liberal Democrats' => const Color(0xFFFAA61A),
-      'No Party Affiliation' => const Color(0xFF78909C),
-      _ => Colors.grey,
-    };
+  'Scottish National Party' => const Color(0xFFF5D800),
+  'Scottish Labour' => const Color(0xFFDC241F),
+  'Reform UK' => const Color(0xFF12B6CF),
+  'Scottish Green Party' => const Color(0xFF009E44),
+  'Scottish Conservatives' => const Color(0xFF003087),
+  'Scottish Liberal Democrats' => const Color(0xFFFAA61A),
+  'No Party Affiliation' => const Color(0xFF78909C),
+  _ => Colors.grey,
+};
 
 // Returns a text colour that is readable against a lightly-tinted background
 // of [partyColor] (opacity ≈ 0.12).
@@ -62,6 +62,7 @@ class _GameScreenState extends State<GameScreen> {
   GuessResult? _lastResult;
   final _nameController = TextEditingController();
   final _nameFocusNode = FocusNode();
+  final _nextFocusNode = FocusNode();
   String? _selectedParty;
 
   GameService get _service => widget.service;
@@ -84,22 +85,25 @@ class _GameScreenState extends State<GameScreen> {
   void dispose() {
     _nameController.dispose();
     _nameFocusNode.dispose();
+    _nextFocusNode.dispose();
     super.dispose();
   }
 
-  bool get _canSubmit =>
-      _nameController.text.trim().isNotEmpty && _selectedParty != null;
+  bool get _canSubmit => _currentMsp != null;
 
   void _submit() {
-    if (!_canSubmit || _currentMsp == null) return;
+    if (!_canSubmit) return;
     final result = _service.submitGuess(
       _currentMsp!,
       _nameController.text.trim(),
-      _selectedParty!,
+      _selectedParty,
     );
     setState(() {
       _lastResult = result;
       _phase = _GamePhase.result;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _nextFocusNode.requestFocus();
     });
   }
 
@@ -117,8 +121,9 @@ class _GameScreenState extends State<GameScreen> {
       }
     });
     if (_phase == _GamePhase.playing) {
-      WidgetsBinding.instance.addPostFrameCallback(
-          (_) { if (mounted) _nameFocusNode.requestFocus(); });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _nameFocusNode.requestFocus();
+      });
     }
   }
 
@@ -155,87 +160,80 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.enter): () {
-          if (_phase == _GamePhase.playing && _canSubmit) {
-            _submit();
-          } else if (_phase == _GamePhase.result) {
-            _next();
-          }
-        },
-      },
-      child: Scaffold(
-          backgroundColor: const Color(0xFFF0F2F5),
-          appBar: AppBar(
-            backgroundColor: const Color(0xFF003087),
-            foregroundColor: Colors.white,
-            title: const Text('MSP Active Recall'),
-            actions: [
-              IconButton(
-                onPressed: _confirmReset,
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Reset game',
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F2F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF003087),
+        foregroundColor: Colors.white,
+        title: const Text('MSP Active Recall'),
+        actions: [
+          IconButton(
+            onPressed: _confirmReset,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reset game',
           ),
-          body: Column(
-            children: [
-              _ProgressHeader(
-                guessed: _service.guessedCount,
-                total: _service.totalCount,
-              ),
-              Expanded(
-                child: SelectionArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 20),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: switch (_phase) {
-                          _GamePhase.playing => _PlayingView(
-                              key: ValueKey(_currentMsp?.slug ?? ''),
-                              msp: _currentMsp!,
-                              nameController: _nameController,
-                              nameFocusNode: _nameFocusNode,
-                              selectedParty: _selectedParty,
-                              onPartySelected: (p) =>
-                                  setState(() => _selectedParty = p),
-                              canSubmit: _canSubmit,
-                              onSubmit: _submit,
-                            ),
-                          _GamePhase.result => _ResultView(
-                              key: ValueKey(
-                                  'result_${_lastResult?.msp.slug ?? ''}'),
-                              result: _lastResult!,
-                              onNext: _next,
-                            ),
-                          _GamePhase.complete => _CompleteView(
-                              key: const ValueKey('complete'),
-                              total: _service.totalCount,
-                              onPlayAgain: () async {
-                                await _service.reset();
-                                if (!mounted) return;
-                                setState(() {
-                                  _phase = _GamePhase.playing;
-                                  _currentMsp = _service.pickNext();
-                                });
-                              },
-                            ),
-                        },
-                      ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _ProgressHeader(
+            guessed: _service.guessedCount,
+            total: _service.totalCount,
+          ),
+          Expanded(
+            child: SelectionArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: switch (_phase) {
+                        _GamePhase.playing => _PlayingView(
+                          key: ValueKey(_currentMsp?.slug ?? ''),
+                          msp: _currentMsp!,
+                          nameController: _nameController,
+                          nameFocusNode: _nameFocusNode,
+                          selectedParty: _selectedParty,
+                          onPartySelected: (p) =>
+                              setState(() => _selectedParty = p),
+                          canSubmit: _canSubmit,
+                          onSubmit: _submit,
+                        ),
+                        _GamePhase.result => _ResultView(
+                          key: ValueKey(
+                            'result_${_lastResult?.msp.slug ?? ''}',
+                          ),
+                          result: _lastResult!,
+                          nextFocusNode: _nextFocusNode,
+                          onNext: _next,
+                        ),
+                        _GamePhase.complete => _CompleteView(
+                          key: const ValueKey('complete'),
+                          total: _service.totalCount,
+                          onPlayAgain: () async {
+                            await _service.reset();
+                            if (!mounted) return;
+                            setState(() {
+                              _phase = _GamePhase.playing;
+                              _currentMsp = _service.pickNext();
+                            });
+                          },
+                        ),
+                      },
                     ),
                   ),
                 ),
-                ),
               ),
-              const _Footer(),
-            ],
+            ),
           ),
-        ),
+          const _Footer(),
+        ],
+      ),
     );
   }
 }
@@ -263,8 +261,9 @@ class _ProgressHeader extends StatelessWidget {
                 value: progress,
                 minHeight: 10,
                 backgroundColor: Colors.white24,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFFF5D800)),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFFF5D800),
+                ),
               ),
             ),
           ),
@@ -331,8 +330,7 @@ class _PlayingViewState extends State<_PlayingView> {
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      widget.onPartySelected(
-          parties[cur <= 0 ? parties.length - 1 : cur - 1]);
+      widget.onPartySelected(parties[cur <= 0 ? parties.length - 1 : cur - 1]);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -346,21 +344,21 @@ class _PlayingViewState extends State<_PlayingView> {
         // MSP photo
         Card(
           clipBehavior: Clip.antiAlias,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 4,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Image.asset(
-            widget.msp.imagePath,
-            height: 260,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Container(
+              widget.msp.imagePath,
               height: 260,
-              color: Colors.grey.shade200,
-              child:
-                  const Icon(Icons.person, size: 80, color: Colors.grey),
-            ),
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 260,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.person, size: 80, color: Colors.grey),
+              ),
             ),
           ),
         ),
@@ -370,10 +368,9 @@ class _PlayingViewState extends State<_PlayingView> {
         // Name input
         Text(
           'Who is this MSP?',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -385,7 +382,7 @@ class _PlayingViewState extends State<_PlayingView> {
             hintText: 'Type their full name…',
             prefixIcon: Icon(Icons.person_outline),
           ),
-          onSubmitted: (_) => widget.canSubmit ? widget.onSubmit() : null,
+          onEditingComplete: () {},
         ),
 
         const SizedBox(height: 20),
@@ -393,10 +390,9 @@ class _PlayingViewState extends State<_PlayingView> {
         // Party selector — single TAB stop; UP/DOWN move selection
         Text(
           'Which party?',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Focus(
@@ -417,17 +413,17 @@ class _PlayingViewState extends State<_PlayingView> {
                         borderRadius: BorderRadius.circular(10),
                       )
                     : null,
-                padding: focused
-                    ? const EdgeInsets.all(6)
-                    : EdgeInsets.zero,
+                padding: focused ? const EdgeInsets.all(6) : EdgeInsets.zero,
                 child: ExcludeFocus(
                   child: Column(
                     children: kPartyOrder
-                        .map((party) => _PartyOption(
-                              party: party,
-                              selected: party == widget.selectedParty,
-                              onTap: () => widget.onPartySelected(party),
-                            ))
+                        .map(
+                          (party) => _PartyOption(
+                            party: party,
+                            selected: party == widget.selectedParty,
+                            onTap: () => widget.onPartySelected(party),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -479,8 +475,7 @@ class _PartyOption extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(
               color: selected ? color : Colors.grey.shade300,
@@ -504,8 +499,7 @@ class _PartyOption extends StatelessWidget {
                   party,
                   style: TextStyle(
                     color: selected ? textColor : Colors.black87,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ),
@@ -513,7 +507,9 @@ class _PartyOption extends StatelessWidget {
                 '${kPartySeats[party] ?? 0} seat${(kPartySeats[party] ?? 0) == 1 ? '' : 's'}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: selected ? textColor.withAlpha(180) : Colors.grey.shade500,
+                  color: selected
+                      ? textColor.withAlpha(180)
+                      : Colors.grey.shade500,
                 ),
               ),
             ],
@@ -527,17 +523,24 @@ class _PartyOption extends StatelessWidget {
 // ── Result view ───────────────────────────────────────────────────────────────
 
 class _ResultView extends StatelessWidget {
-  const _ResultView({super.key, required this.result, required this.onNext});
+  const _ResultView({
+    super.key,
+    required this.result,
+    required this.nextFocusNode,
+    required this.onNext,
+  });
 
   final GuessResult result;
+  final FocusNode nextFocusNode;
   final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
     final msp = result.msp;
     final correct = result.bothCorrect;
-    final bannerColor =
-        correct ? const Color(0xFF1B5E20) : const Color(0xFF7F0000);
+    final bannerColor = correct
+        ? const Color(0xFF1B5E20)
+        : const Color(0xFF7F0000);
     final bannerIcon = correct ? Icons.check_circle : Icons.cancel;
     final bannerText = correct ? 'Correct!' : 'Not quite!';
 
@@ -558,9 +561,10 @@ class _ResultView extends StatelessWidget {
               Text(
                 bannerText,
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -571,7 +575,8 @@ class _ResultView extends StatelessWidget {
         // MSP photo + name + party side by side
         Card(
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 2,
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -598,9 +603,13 @@ class _ResultView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(msp.name,
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        msp.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       _PartyBadge(party: msp.party),
                     ],
@@ -650,6 +659,7 @@ class _ResultView extends StatelessWidget {
 
         // Next button
         FilledButton.icon(
+          focusNode: nextFocusNode,
           autofocus: true,
           onPressed: onNext,
           icon: const Icon(Icons.arrow_forward),
@@ -686,13 +696,9 @@ class _ResultRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: highlight
-            ? Colors.green.shade50
-            : Colors.red.shade50,
+        color: highlight ? Colors.green.shade50 : Colors.red.shade50,
         border: Border.all(
-          color: highlight
-              ? Colors.green.shade200
-              : Colors.red.shade200,
+          color: highlight ? Colors.green.shade200 : Colors.red.shade200,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -700,8 +706,7 @@ class _ResultRow extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 10),
-          Text('$label: ',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w600)),
           Expanded(child: Text(content)),
         ],
       ),
@@ -728,7 +733,10 @@ class _PartyBadge extends StatelessWidget {
       child: Text(
         party,
         style: TextStyle(
-            fontSize: 12, color: textColor, fontWeight: FontWeight.w600),
+          fontSize: 12,
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -753,15 +761,19 @@ class _InfoBox extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.info_outline,
-                  color: Color(0xFF1565C0), size: 18),
+              const Icon(
+                Icons.info_outline,
+                color: Color(0xFF1565C0),
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 msp.name,
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1565C0),
-                    fontSize: 15),
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1565C0),
+                  fontSize: 15,
+                ),
               ),
             ],
           ),
@@ -773,8 +785,11 @@ class _InfoBox extends StatelessWidget {
               onTap: followLink,
               child: Row(
                 children: [
-                  const Icon(Icons.open_in_new,
-                      size: 16, color: Color(0xFF1565C0)),
+                  const Icon(
+                    Icons.open_in_new,
+                    size: 16,
+                    color: Color(0xFF1565C0),
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -815,16 +830,14 @@ class _CompleteView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 40),
-        const Icon(Icons.emoji_events,
-            size: 80, color: Color(0xFFF5D800)),
+        const Icon(Icons.emoji_events, size: 80, color: Color(0xFFF5D800)),
         const SizedBox(height: 20),
         Text(
           'Congratulations!',
           textAlign: TextAlign.center,
-          style: Theme.of(context)
-              .textTheme
-              .headlineMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
@@ -855,19 +868,21 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      color: const Color(0xFF002060),
-      child: Column(
-        children: [
-          _FooterLink(
-            label: 'Data & images from Scottish Parliament',
-            url: 'https://www.parliament.scot/',
-          ),
-          const SizedBox(height: 4),
-          _FooterRichLine(),
-        ],
+    return ExcludeFocus(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        color: const Color(0xFF002060),
+        child: Column(
+          children: [
+            _FooterLink(
+              label: 'Data & images from Scottish Parliament',
+              url: 'https://www.parliament.scot/',
+            ),
+            const SizedBox(height: 4),
+            _FooterRichLine(),
+          ],
+        ),
       ),
     );
   }
