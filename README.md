@@ -1,16 +1,6 @@
-# msp_active_recall
+# msp-active-recall
 
-A new Flutter project.
+A [Flutter](https://flutter.dev) game app: guess the names and party affiliations of the 129 Members of the Scottish Parliament.
 
-## Getting Started
+[Try it here](https://pkeir.github.io/msp-active-recall).
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
